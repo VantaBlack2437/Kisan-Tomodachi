@@ -21,7 +21,7 @@ import PixelSnow from './PixelSnow';
 // e.g. 'http://192.168.1.50:8000'
 const API_BASE_OVERRIDE = '';
 const API_BASE = API_BASE_OVERRIDE || `${window.location.protocol}//${window.location.hostname}:8000`;
-const POLL_MS = 5000;
+const POLL_MS = 2000;
 
 // Soil thresholds (% moisture). Keep these in sync with SOIL_DRY_BELOW etc. in main.py
 const SOIL_CRITICAL_BELOW = 15;
@@ -85,6 +85,22 @@ const VisualEngine = {
     if (code === 3 || code === 45 || code === 48) return Cloud;
     return CloudRain; // drizzle, rain, showers, thunderstorm...
   }
+};
+
+const getAuroraColors = data => {
+  if (!data || data.soil.moisture === null || data.soil.moisture === undefined) {
+    return ['#64748B', '#94A3B8', '#CBD5E1'];
+  }
+  if (!data.online || data.soil.moisture < SOIL_CRITICAL_BELOW) {
+    return ['#7F1D1D', '#DC2626', '#FB7185'];
+  }
+  if (data.soil.moisture < SOIL_DRY_BELOW) {
+    return ['#9A3412', '#F97316', '#FBBF24'];
+  }
+  if (data.soil.moisture > SOIL_COMFORTABLE_UPTO) {
+    return ['#075985', '#0891B2', '#67E8F9'];
+  }
+  return ['#7cff67', '#B497CF', '#5227FF'];
 };
 
 // ============================================================
@@ -367,10 +383,10 @@ const translations = {
 
 const AppContext = createContext();
 
-const AmbientBackdrop = () => (
+const AmbientBackdrop = ({ data }) => (
   <div className="ambient-backdrop" aria-hidden="true">
     <Aurora
-      colorStops={['#7cff67', '#B497CF', '#5227FF']} // Three colors blended across the Aurora.
+      colorStops={getAuroraColors(data)} // Changes from healthy green to amber/red as field conditions worsen.
       blend={0.5} // Controls how broadly the Aurora blends into the background.
       amplitude={1.0} // Controls the height and intensity of the Aurora waves.
       speed={0.5} // Controls the Aurora animation speed.
@@ -450,8 +466,11 @@ export const AppProvider = ({ children }) => {
   // Poll the backend for live sensor + weather data
   useEffect(() => {
     let cancelled = false;
+    let pollInFlight = false;
 
     const poll = async () => {
+      if (pollInFlight) return;
+      pollInFlight = true;
       setIsUpdating(true);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);
@@ -467,6 +486,7 @@ export const AppProvider = ({ children }) => {
         if (!cancelled) setIsConnected(false);
       } finally {
         clearTimeout(timer);
+        pollInFlight = false;
         if (!cancelled) setIsUpdating(false);
       }
     };
@@ -486,7 +506,7 @@ export const AppProvider = ({ children }) => {
       farmStayRequests, addFarmStayRequest, updateFarmStayRequest
     }}>
       <div className={`app-shell ${theme === 'dark' ? 'dark app-shell-dark bg-stone-900 text-stone-100' : 'app-shell-light bg-[#f4f9f1] text-[#183629]'} min-h-screen font-sans transition-colors duration-300`}>
-        <AmbientBackdrop />
+        <AmbientBackdrop data={data} />
         <div className="app-shell-inner">
           <MagicBento
             enableStars

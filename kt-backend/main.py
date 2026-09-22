@@ -40,7 +40,7 @@ from pydantic import BaseModel, Field
 ARDUINO_PORT = "/dev/ttyACM0"
 ARDUINO_BAUD = 115200
 ARDUINO_RECONNECT_DELAY = 5      # seconds between reconnect attempts
-SENSOR_STALE_AFTER = 10          # seconds without data => "arduino offline"
+SENSOR_STALE_AFTER = 12          # allow several 2.5-second Arduino cycles to be missed
 
 # Soil calibration:
 # sensor in dry air -> raw value -> SOIL_DRY
@@ -101,6 +101,7 @@ state = {
         "temperature": None,
         "humidity": None,
         "updated_at": None,     # ISO timestamp of last valid reading
+        "last_seen_at": None,   # ISO timestamp of the latest serial packet
     },
     "weather": {
         "current": None,
@@ -127,7 +128,10 @@ def snapshot() -> dict:
     with state_lock:
         data = copy.deepcopy(state)
 
-    s_age = age_seconds(data["sensors"]["updated_at"])
+    # A serial packet is an Arduino heartbeat. A bad DHT sample should not make
+    # the connected board appear offline; valid measurement freshness remains
+    # available separately through updated_at.
+    s_age = age_seconds(data["sensors"]["last_seen_at"])
     data["sensors"]["online"] = s_age is not None and s_age <= SENSOR_STALE_AFTER
     data["farm"] = {"name": FARM_NAME, "crop": CROP}
     data["generated_at"] = now_iso()
@@ -183,9 +187,9 @@ def parse_line(line: str) -> tuple[int, float, float]:
     temperature = float(parts[1].split("=")[1])
     humidity = float(parts[2].split("=")[1])
 
-    # DHT sensors sometimes report NaN on a failed read
-    if math.isnan(temperature) or math.isnan(humidity):
-        raise ValueError("NaN from sensor")
+    # DHT sensors can report NaN or infinity during a transient failed read.
+    if not math.isfinite(temperature) or not math.isfinite(humidity):
+        raise ValueError("non-finite value from sensor")
 
     return soil, temperature, humidity
 
@@ -195,6 +199,7 @@ def read_arduino():
     while not stop_event.is_set():
         try:
             arduino = serial.Serial(ARDUINO_PORT, ARDUINO_BAUD, timeout=1)
+            arduino.reset_input_buffer()
             print(f"[arduino] connected on {ARDUINO_PORT}")
         except Exception as e:
             print(f"[arduino] connect failed: {e} - retrying in {ARDUINO_RECONNECT_DELAY}s")
@@ -206,6 +211,9 @@ def read_arduino():
                 line = arduino.readline().decode("utf-8", errors="ignore").strip()
                 if not line:
                     continue
+
+                with state_lock:
+                    state["sensors"]["last_seen_at"] = now_iso()
 
                 try:
                     soil, temperature, humidity = parse_line(line)

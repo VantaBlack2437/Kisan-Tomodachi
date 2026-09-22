@@ -44,9 +44,10 @@ void loop() {
     Serial.print("SOIL=");
     Serial.print(soil);
     Serial.print(",TEMP=");
-    Serial.print(temperature);
+    // Keep the last valid DHT values when a transient read fails.
+    Serial.print(lastTemperature);
     Serial.print(",HUM=");
-    Serial.println(humidity);
+    Serial.println(lastHumidity);
   }
 
   // Refresh the LCD independently so it never delays sensor publication.

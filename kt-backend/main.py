@@ -25,6 +25,7 @@ from pathlib import Path
 
 import httpx
 import serial
+from serial.tools import list_ports
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,7 +38,9 @@ from pydantic import BaseModel, Field
 # ============================================================
 
 # --- Arduino ---
-ARDUINO_PORT = "/dev/ttyACM0"
+# Set ARDUINO_PORT to a device path to pin the connection. With "auto", the
+# reader discovers common Arduino/USB-serial device names after reconnects.
+ARDUINO_PORT = os.getenv("ARDUINO_PORT", "auto").strip() or "auto"
 ARDUINO_BAUD = 115200
 ARDUINO_RECONNECT_DELAY = 5      # seconds between reconnect attempts
 SENSOR_STALE_AFTER = 12          # allow several 2.5-second Arduino cycles to be missed
@@ -179,13 +182,18 @@ def parse_line(line: str) -> tuple[int, float, float]:
     Expected format: SOIL=170,TEMP=26.80,HUM=57.80
     (key names don't matter, only the order: soil, temperature, humidity)
     """
-    parts = line.split(",")
-    if len(parts) < 3:
-        raise ValueError("not enough fields")
+    values = {}
+    for part in line.split(","):
+        key, separator, value = part.partition("=")
+        if separator:
+            values[key.strip().upper()] = value.strip()
 
-    soil = int(parts[0].split("=")[1])
-    temperature = float(parts[1].split("=")[1])
-    humidity = float(parts[2].split("=")[1])
+    if not {"SOIL", "TEMP", "HUM"}.issubset(values):
+        raise ValueError("missing sensor fields")
+
+    soil = int(values["SOIL"])
+    temperature = float(values["TEMP"])
+    humidity = float(values["HUM"])
 
     # DHT sensors can report NaN or infinity during a transient failed read.
     if not math.isfinite(temperature) or not math.isfinite(humidity):
@@ -194,13 +202,42 @@ def parse_line(line: str) -> tuple[int, float, float]:
     return soil, temperature, humidity
 
 
+def find_arduino_port() -> str | None:
+    """Return the configured port or the most likely connected USB serial port."""
+    if ARDUINO_PORT.lower() != "auto":
+        return ARDUINO_PORT
+
+    candidates = []
+    for port in list_ports.comports():
+        text = f"{port.device} {port.description} {port.manufacturer}".lower()
+        score = 0
+        if "arduino" in text:
+            score += 100
+        if "usb" in text or "serial" in text or "ch340" in text or "cp210" in text:
+            score += 50
+        if port.device.startswith("/dev/ttyACM"):
+            score += 20
+        elif port.device.startswith("/dev/ttyUSB"):
+            score += 10
+        if score:
+            candidates.append((score, port.device))
+
+    return max(candidates, default=(0, None))[1]
+
+
 def read_arduino():
     """Runs forever in a background thread; reconnects if the cable drops."""
     while not stop_event.is_set():
+        port = find_arduino_port()
+        if not port:
+            print("[arduino] no USB serial device found - retrying")
+            stop_event.wait(ARDUINO_RECONNECT_DELAY)
+            continue
+
         try:
-            arduino = serial.Serial(ARDUINO_PORT, ARDUINO_BAUD, timeout=1)
+            arduino = serial.Serial(port, ARDUINO_BAUD, timeout=1)
             arduino.reset_input_buffer()
-            print(f"[arduino] connected on {ARDUINO_PORT}")
+            print(f"[arduino] connected on {port}")
         except Exception as e:
             print(f"[arduino] connect failed: {e} - retrying in {ARDUINO_RECONNECT_DELAY}s")
             stop_event.wait(ARDUINO_RECONNECT_DELAY)

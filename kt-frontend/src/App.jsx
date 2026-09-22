@@ -5,8 +5,12 @@ import {
   CheckCircle2, Languages, Moon, SunMedium, Send, Mic,
   Wifi, WifiOff, RefreshCw,
   Store, Users, Leaf, Award, Plus, Trash2, MapPin, Star,
-  Gift, X, Wrench, Package, ShoppingBag, Phone, Calendar, Lock
+  Gift, X, Wrench, Package, ShoppingBag, Phone, Calendar, Lock,
+  BedDouble, Utensils, UsersRound, Mountain, Camera, ClipboardList, Edit3, Check
 } from 'lucide-react';
+import Aurora from './Aurora';
+import MagicBento from './MagicBento';
+import PixelSnow from './PixelSnow';
 
 // ============================================================
 // BACKEND CONFIG
@@ -91,6 +95,8 @@ const LS_KEYS = {
   crops: 'kt_market_crop_listings',
   hireRequests: 'kt_hire_requests',
   sdgLog: 'kt_sdg_log',
+  farmStayListings: 'kt_farmstay_listings',
+  farmStayRequests: 'kt_farmstay_requests',
 };
 
 // Categories farmers can buy from local businesses
@@ -115,6 +121,33 @@ const FIELD_WATCHERS = [
   { id: 'w2', name: 'Lakshmi Devi', rating: 4.9, rate: 350, experience: '4 yrs, also handles irrigation', location: 'Karimnagar', contact: '+91 91234 10002' },
   { id: 'w3', name: 'Suresh Yadav', rating: 4.6, rate: 380, experience: '8 yrs field watching & pest control', location: 'Nizamabad', contact: '+91 91234 10003' },
   { id: 'w4', name: 'Anjali Reddy', rating: 4.7, rate: 420, experience: '3 yrs, night watch specialist', location: 'Khammam', contact: '+91 91234 10004' },
+];
+
+const FARMSTAY_SEED_LISTINGS = [
+  {
+    id: 'fs1', title: 'Mango Grove Morning', host: 'Lakshmi & family', location: 'Warangal, Telangana',
+    price: 1800, capacity: 4, availability: 'Oct - Mar', accommodation: 'Private mud cottage with attached washroom',
+    meals: ['Breakfast', 'Farm lunch', 'Evening chai'], activities: ['Harvest mangoes', 'Bullock-cart ride', 'Compost workshop'],
+    sustainability: ['Solar-powered lights', 'Rainwater harvesting', 'Chemical-free kitchen garden'],
+    image: 'https://images.unsplash.com/photo-1500076656116-558758c991c1?auto=format&fit=crop&w=1200&q=85',
+    description: 'Wake up among old mango trees, share a home-cooked meal, and spend an unhurried day learning the rhythm of a working farm.'
+  },
+  {
+    id: 'fs2', title: 'The Millet Homestead', host: 'Ravi Kumar', location: 'Anantapur, Andhra Pradesh',
+    price: 1450, capacity: 6, availability: 'Year-round', accommodation: 'Two airy rooms in a restored village home',
+    meals: ['Breakfast', 'Millet thali lunch', 'Dinner'], activities: ['Millet cooking class', 'Seed saving', 'Sunset village walk'],
+    sustainability: ['Regenerative millet fields', 'Natural cooling', 'Local produce only'],
+    image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1200&q=85',
+    description: 'A warm village stay for families who want to cook, plant, and eat together with a host who loves local grains.'
+  },
+  {
+    id: 'fs3', title: 'Riverbank Rice Retreat', host: 'Sita Reddy', location: 'Karimnagar, Telangana',
+    price: 2200, capacity: 3, availability: 'Nov - Feb', accommodation: 'Riverside bamboo cabin and shaded veranda',
+    meals: ['Breakfast', 'Seasonal lunch'], activities: ['Paddy planting', 'Bird watching', 'Clay-pot making'],
+    sustainability: ['Bamboo construction', 'Wetland-friendly farming', 'Refill-only stay'],
+    image: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1?auto=format&fit=crop&w=1200&q=85',
+    description: 'Slow down beside the river, get your hands in the paddy, and enjoy a peaceful, low-waste weekend in the countryside.'
+  }
 ];
 
 // Sustainable practices a farmer can log, each worth eco points
@@ -154,7 +187,7 @@ const translations = {
     raw_data: "Raw Sensor Data", soil_raw: "Soil Raw ADC", last_updated: "Last updated",
     lang: "Language", theme: "Theme", light: "Light", dark: "Dark",
 
-    nav_market: "Marketplace", nav_hire: "Field Watch", nav_sdg: "Sustainability",
+    nav_market: "Marketplace", nav_farmstay: "FarmStay", nav_hire: "Field Watch", nav_sdg: "Sustainability",
 
     market_title: "Marketplace", market_subtitle: "Buy supplies from local businesses or sell your crop",
     market_buy_tab: "Buy Supplies", market_sell_tab: "Sell Your Crop",
@@ -164,6 +197,8 @@ const translations = {
     market_price: "Price", market_unit: "Unit (e.g. per kg)", market_location: "Location", market_post: "Post Listing",
     market_no_crop_listings: "You haven't listed any crops yet.", market_delete: "Remove",
     market_eco_offer: "Eco offer unlocked for you",
+
+    farmstay_title: "FarmStay", farmstay_subtitle: "Stay close to the soil, meet local hosts, and take home a story",
 
     hire_title: "Field Watch", hire_subtitle: "Hire trusted locals to watch your field while you're away",
     hire_find_tab: "Find a Watcher", hire_requests_tab: "My Requests",
@@ -202,7 +237,7 @@ const translations = {
     raw_data: "ముడి డేటా", soil_raw: "నేల ముడి ADC", last_updated: "చివరి నవీకరణ",
     lang: "భాష", theme: "థీమ్", light: "లైట్", dark: "డార్క్",
 
-    nav_market: "మార్కెట్‌ప్లేస్", nav_hire: "పొలం కాపలా", nav_sdg: "సుస్థిరత",
+    nav_market: "మార్కెట్‌ప్లేస్", nav_farmstay: "ఫార్మ్‌స్టే", nav_hire: "పొలం కాపలా", nav_sdg: "సుస్థిరత",
 
     market_title: "మార్కెట్‌ప్లేస్", market_subtitle: "స్థానిక వ్యాపారుల నుండి కొనండి లేదా మీ పంటను అమ్మండి",
     market_buy_tab: "సామాగ్రి కొనండి", market_sell_tab: "మీ పంట అమ్మండి",
@@ -250,7 +285,7 @@ const translations = {
     raw_data: "कच्चा डेटा", soil_raw: "मिट्टी का कच्चा ADC", last_updated: "अंतिम अपडेट",
     lang: "भाषा", theme: "थीम", light: "लाइट", dark: "डार्क",
 
-    nav_market: "बाज़ार", nav_hire: "खेत की निगरानी", nav_sdg: "स्थिरता",
+    nav_market: "बाज़ार", nav_farmstay: "फार्मस्टे", nav_hire: "खेत की निगरानी", nav_sdg: "स्थिरता",
 
     market_title: "बाज़ार", market_subtitle: "स्थानीय व्यापारियों से सामान खरीदें या अपनी फसल बेचें",
     market_buy_tab: "सामान खरीदें", market_sell_tab: "अपनी फसल बेचें",
@@ -298,7 +333,7 @@ const translations = {
     raw_data: "生データ", soil_raw: "土壌ADC", last_updated: "最終更新",
     lang: "言語", theme: "テーマ", light: "ライト", dark: "ダーク",
 
-    nav_market: "マーケット", nav_hire: "畑の見守り", nav_sdg: "サステナビリティ",
+    nav_market: "マーケット", nav_farmstay: "ファームステイ", nav_hire: "畑の見守り", nav_sdg: "サステナビリティ",
 
     market_title: "マーケット", market_subtitle: "地元業者から資材を購入、または作物を販売",
     market_buy_tab: "資材を購入", market_sell_tab: "作物を売る",
@@ -332,6 +367,26 @@ const translations = {
 
 const AppContext = createContext();
 
+const AmbientBackdrop = () => (
+  <div className="ambient-backdrop" aria-hidden="true">
+    <Aurora
+      colorStops={['#7cff67', '#B497CF', '#5227FF']} // Three colors blended across the Aurora.
+      blend={0.5} // Controls how broadly the Aurora blends into the background.
+      amplitude={1.0} // Controls the height and intensity of the Aurora waves.
+      speed={0.5} // Controls the Aurora animation speed.
+    />
+    <PixelSnow
+      color="#d9ffe5" // Mint-white color used for the snow particles.
+      minFlakeSize={1.25} // Keeps distant flakes from becoming too small to see.
+      speed={0.8} // Controls how quickly the flakes drift through the scene.
+      density={0.1} // Controls how many flakes are visible.
+      direction={125} // Sets the overall wind direction in degrees.
+      brightness={0.9} // Controls the brightness of the snow against Aurora.
+      variant="round" // Renders flakes as soft round particles.
+    />
+  </div>
+);
+
 export const AppProvider = ({ children }) => {
   const [lang, setLang] = useState('en');
   const [theme, setTheme] = useState('light');
@@ -352,10 +407,18 @@ export const AppProvider = ({ children }) => {
   const [sdgLog, setSdgLog] = useState(() => {
     try { return JSON.parse(localStorage.getItem(LS_KEYS.sdgLog)) || []; } catch { return []; }
   });
+  const [farmStayListings, setFarmStayListings] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(LS_KEYS.farmStayListings)) || FARMSTAY_SEED_LISTINGS; } catch { return FARMSTAY_SEED_LISTINGS; }
+  });
+  const [farmStayRequests, setFarmStayRequests] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(LS_KEYS.farmStayRequests)) || []; } catch { return []; }
+  });
 
   useEffect(() => { localStorage.setItem(LS_KEYS.crops, JSON.stringify(cropListings)); }, [cropListings]);
   useEffect(() => { localStorage.setItem(LS_KEYS.hireRequests, JSON.stringify(hireRequests)); }, [hireRequests]);
   useEffect(() => { localStorage.setItem(LS_KEYS.sdgLog, JSON.stringify(sdgLog)); }, [sdgLog]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.farmStayListings, JSON.stringify(farmStayListings)); }, [farmStayListings]);
+  useEffect(() => { localStorage.setItem(LS_KEYS.farmStayRequests, JSON.stringify(farmStayRequests)); }, [farmStayRequests]);
 
   const ecoPoints = sdgLog.reduce((sum, entry) => sum + (entry.points || 0), 0);
 
@@ -370,6 +433,17 @@ export const AppProvider = ({ children }) => {
     if (!practice) return;
     setSdgLog(prev => [{ id: `g${Date.now()}`, practiceId, points: practice.points, notes: notes || '', date: new Date().toISOString() }, ...prev]);
   };
+
+  const saveFarmStayListing = (listing) => {
+    setFarmStayListings(prev => {
+      const exists = prev.some(item => item.id === listing.id);
+      const savedListing = { ...listing, id: listing.id || `fs${Date.now()}` };
+      return exists ? prev.map(item => item.id === savedListing.id ? savedListing : item) : [savedListing, ...prev];
+    });
+  };
+  const removeFarmStayListing = (id) => setFarmStayListings(prev => prev.filter(item => item.id !== id));
+  const addFarmStayRequest = (request) => setFarmStayRequests(prev => [{ id: `fr${Date.now()}`, status: 'pending', createdAt: new Date().toISOString(), ...request }, ...prev]);
+  const updateFarmStayRequest = (id, status) => setFarmStayRequests(prev => prev.map(request => request.id === id ? { ...request, status } : request));
 
   const t = (key) => translations[lang][key] || key;
 
@@ -407,10 +481,25 @@ export const AppProvider = ({ children }) => {
       lang, setLang, theme, setTheme, view, setView, data, isUpdating, isConnected, t,
       cropListings, addCropListing, removeCropListing,
       hireRequests, addHireRequest, removeHireRequest,
-      sdgLog, addSdgEntry, ecoPoints
+      sdgLog, addSdgEntry, ecoPoints,
+      farmStayListings, saveFarmStayListing, removeFarmStayListing,
+      farmStayRequests, addFarmStayRequest, updateFarmStayRequest
     }}>
-      <div className={`${theme === 'dark' ? 'dark bg-stone-900 text-stone-100' : 'bg-stone-50 text-stone-900'} min-h-screen font-sans transition-colors duration-300`}>
-        {children}
+      <div className={`app-shell ${theme === 'dark' ? 'dark app-shell-dark bg-stone-900 text-stone-100' : 'app-shell-light bg-[#f4f9f1] text-[#183629]'} min-h-screen font-sans transition-colors duration-300`}>
+        <AmbientBackdrop />
+        <div className="app-shell-inner">
+          <MagicBento
+            enableStars
+            enableSpotlight
+            enableBorderGlow
+            enableTilt
+            enableMagnetism
+            clickEffect
+            particleCount={8}
+            glowColor="33, 122, 84"
+          />
+          {children}
+        </div>
       </div>
     </AppContext.Provider>
   );
@@ -466,15 +555,18 @@ const HomeView = () => {
   const heroTitle = !data.online ? t('sensors_offline') : isHealthy ? t('hero_healthy') : t('hero_attention');
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500">
+    <div className="page-wrap p-4 md:p-8 max-w-5xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500">
 
       {/* Farm Status Hero */}
-      <div className={`p-6 md:p-10 rounded-3xl text-white shadow-lg flex flex-col md:flex-row items-center justify-between transition-colors duration-700 ${heroColor}`}>
+      <div className={`status-hero p-6 md:p-10 rounded-[28px] text-white shadow-lg flex flex-col md:flex-row items-center justify-between transition-colors duration-700 ${heroColor}`}>
         <div className="flex items-center space-x-6 mb-4 md:mb-0">
-          <div className="bg-white/20 p-4 rounded-full">
+          <div className="bg-white/20 p-4 rounded-full ring-2 ring-white/20 shadow-lg shadow-black/10">
             {isHealthy ? <CheckCircle2 size={64} /> : <AlertTriangle size={64} />}
           </div>
           <div>
+            <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white/80 mb-3">
+              Field overview
+            </div>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-2">
               {heroTitle}
             </h1>
@@ -488,7 +580,7 @@ const HomeView = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
 
         {/* Primary Action / Visual: Soil */}
-        <div className="bg-white dark:bg-stone-800 p-8 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700 flex flex-col items-center justify-center">
+        <div className="dashboard-card bg-white dark:bg-stone-800 p-8 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700 flex flex-col items-center justify-center">
           <h2 className="text-2xl font-bold mb-8 text-stone-800 dark:text-stone-100">{t('moisture')}</h2>
           <MoistureMeter value={moisture} label={t(mState.text)} />
 
@@ -513,7 +605,7 @@ const HomeView = () => {
         <div className="space-y-6 md:space-y-8">
 
           {/* Quick Weather */}
-          <div className="bg-white dark:bg-stone-800 p-6 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700">
+          <div className="dashboard-card bg-white dark:bg-stone-800 p-6 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700">
             <h2 className="text-xl font-bold mb-4 flex items-center"><SunMedium className="mr-2"/> {t('nav_weather')}</h2>
             {data.weather.available ? (
               <div className="flex items-center justify-around">
@@ -533,7 +625,7 @@ const HomeView = () => {
           </div>
 
           {/* Quick Crop / field conditions */}
-          <div className="bg-white dark:bg-stone-800 p-6 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700">
+          <div className="dashboard-card bg-white dark:bg-stone-800 p-6 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700">
              <h2 className="text-xl font-bold mb-4 flex items-center"><Sprout className="mr-2"/> {t('nav_crop')}</h2>
              <div className="flex items-center space-x-4">
                 <div className="p-4 rounded-full bg-green-500/10">
@@ -795,6 +887,171 @@ const MarketplaceView = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FARMSTAY_EMPTY_FORM = {
+  title: '', host: '', location: '', price: '', capacity: '', availability: '', accommodation: '',
+  meals: '', activities: '', sustainability: '', image: '', description: ''
+};
+
+const FarmStayView = () => {
+  const {
+    farmStayListings, saveFarmStayListing, removeFarmStayListing,
+    farmStayRequests, addFarmStayRequest, updateFarmStayRequest
+  } = useContext(AppContext);
+  const [tab, setTab] = useState('explore');
+  const [selected, setSelected] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(FARMSTAY_EMPTY_FORM);
+  const [request, setRequest] = useState({ name: '', guests: 2, checkIn: '', checkOut: '', note: '' });
+
+  const myListings = farmStayListings.filter(listing => listing.owner);
+  const selectedListing = farmStayListings.find(listing => listing.id === selected);
+
+  const editListing = (listing) => {
+    setEditing(listing.id);
+    setForm({
+      ...listing,
+      meals: listing.meals.join(', '),
+      activities: listing.activities.join(', '),
+      sustainability: listing.sustainability.join(', ')
+    });
+    setTab('manage');
+  };
+
+  const submitListing = (event) => {
+    event.preventDefault();
+    if (!form.title || !form.location || !form.price || !form.capacity || !form.accommodation) return;
+    saveFarmStayListing({
+      ...form,
+      id: editing || undefined,
+      owner: true,
+      price: Number(form.price),
+      capacity: Number(form.capacity),
+      meals: form.meals.split(',').map(item => item.trim()).filter(Boolean),
+      activities: form.activities.split(',').map(item => item.trim()).filter(Boolean),
+      sustainability: form.sustainability.split(',').map(item => item.trim()).filter(Boolean),
+      image: form.image || 'https://images.unsplash.com/photo-1500076656116-558758c991c1?auto=format&fit=crop&w=1200&q=85'
+    });
+    setForm(FARMSTAY_EMPTY_FORM);
+    setEditing(null);
+  };
+
+  const submitRequest = (event) => {
+    event.preventDefault();
+    if (!selectedListing || !request.name || !request.checkIn || !request.checkOut) return;
+    addFarmStayRequest({ ...request, listingId: selectedListing.id, listingTitle: selectedListing.title });
+    setRequest({ name: '', guests: 2, checkIn: '', checkOut: '', note: '' });
+    setSelected(null);
+  };
+
+  return (
+    <div className="p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in">
+      <div className="farmstay-hero rounded-3xl p-6 md:p-10 mb-8 text-white overflow-hidden relative">
+        <div className="relative z-10 max-w-2xl">
+          <div className="inline-flex items-center rounded-full bg-white/15 border border-white/20 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] mb-4">
+            <Mountain size={14} className="mr-2" /> Rural stays, real stories
+          </div>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-3">FarmStay</h1>
+          <p className="text-lg md:text-xl text-white/85">Stay close to the soil, meet local hosts, and take home a story.</p>
+        </div>
+        <Sprout className="absolute -right-6 -bottom-12 text-white/15" size={220} />
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-8 bg-stone-100 dark:bg-stone-800 p-1.5 rounded-2xl w-fit">
+        {[['explore', 'Explore stays'], ['manage', 'My FarmStay']].map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)} className={`px-5 py-3 rounded-xl font-bold transition-colors ${tab === key ? 'bg-white dark:bg-stone-700 text-green-700 dark:text-green-300 shadow-sm' : 'text-stone-500'}`}>
+            {key === 'explore' ? <Mountain size={17} className="inline mr-2" /> : <ClipboardList size={17} className="inline mr-2" />}{label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'explore' && (
+        <>
+          <div className="flex items-end justify-between mb-5">
+            <div><h2 className="text-2xl font-bold">Find your kind of countryside</h2><p className="text-stone-500 mt-1">Handpicked stays hosted by farming families.</p></div>
+            <span className="text-sm text-stone-500 font-bold">{farmStayListings.length} stays</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {farmStayListings.map(listing => (
+              <article key={listing.id} className="farmstay-card bg-white dark:bg-stone-800 rounded-3xl overflow-hidden shadow-sm border border-stone-100 dark:border-stone-700">
+                <div className="relative h-52">
+                  <img src={listing.image} alt={listing.title} className="w-full h-full object-cover" />
+                  <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/90 text-green-800 text-xs font-bold">{listing.availability}</div>
+                  <div className="absolute bottom-4 right-4 px-3 py-2 rounded-2xl bg-stone-900/80 text-white font-bold">₹{listing.price}<span className="text-xs font-medium text-white/70"> / person / day</span></div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-xl font-bold mb-1">{listing.title}</h3>
+                  <p className="text-stone-500 text-sm flex items-center mb-3"><MapPin size={15} className="mr-1" />{listing.location}</p>
+                  <p className="text-stone-600 dark:text-stone-300 text-sm line-clamp-2 mb-4">{listing.description}</p>
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    <span className="farmstay-chip"><BedDouble size={14} /> {listing.accommodation.split(' ').slice(0, 3).join(' ')}</span>
+                    <span className="farmstay-chip"><UsersRound size={14} /> Up to {listing.capacity}</span>
+                    <span className="farmstay-chip"><Utensils size={14} /> {listing.meals.length} meals</span>
+                  </div>
+                  <button onClick={() => setSelected(listing.id)} className="w-full p-3 rounded-2xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors">View stay & request</button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {selectedListing && (
+            <div className="fixed inset-0 z-[80] bg-stone-950/60 p-4 md:p-8 overflow-y-auto" onClick={() => setSelected(null)}>
+              <div className="max-w-5xl mx-auto bg-white dark:bg-stone-800 rounded-3xl overflow-hidden shadow-2xl" onClick={event => event.stopPropagation()}>
+                <div className="grid lg:grid-cols-2">
+                  <div className="relative min-h-[280px] lg:min-h-[620px]"><img src={selectedListing.image} alt={selectedListing.title} className="absolute inset-0 w-full h-full object-cover" /><button onClick={() => setSelected(null)} className="absolute top-4 right-4 p-3 rounded-full bg-stone-900/70 text-white"><X size={20} /></button></div>
+                  <div className="p-6 md:p-8">
+                    <p className="text-green-600 font-bold text-sm uppercase tracking-wider mb-2">Hosted by {selectedListing.host}</p>
+                    <h2 className="text-3xl font-extrabold mb-2">{selectedListing.title}</h2>
+                    <p className="text-stone-500 flex items-center mb-6"><MapPin size={16} className="mr-1" />{selectedListing.location}</p>
+                    <p className="text-stone-600 dark:text-stone-300 leading-relaxed mb-6">{selectedListing.description}</p>
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                      <div className="farmstay-detail"><BedDouble size={18} /><span>{selectedListing.accommodation}</span></div>
+                      <div className="farmstay-detail"><UsersRound size={18} /><span>Up to {selectedListing.capacity} guests</span></div>
+                    </div>
+                    <div className="mb-5"><h3 className="font-bold mb-2 flex items-center"><Utensils size={17} className="mr-2 text-green-600" /> Meals included</h3><div className="flex flex-wrap gap-2">{selectedListing.meals.map(item => <span key={item} className="farmstay-tag">{item}</span>)}</div></div>
+                    <div className="mb-5"><h3 className="font-bold mb-2 flex items-center"><Sprout size={17} className="mr-2 text-green-600" /> Farm activities</h3><div className="flex flex-wrap gap-2">{selectedListing.activities.map(item => <span key={item} className="farmstay-tag">{item}</span>)}</div></div>
+                    <div className="mb-7"><h3 className="font-bold mb-2 flex items-center"><Leaf size={17} className="mr-2 text-green-600" /> Sustainability highlights</h3><div className="flex flex-wrap gap-2">{selectedListing.sustainability.map(item => <span key={item} className="farmstay-tag farmstay-tag-green">{item}</span>)}</div></div>
+                    <form onSubmit={submitRequest} className="border-t border-stone-200 dark:border-stone-700 pt-6 space-y-3">
+                      <h3 className="text-xl font-bold">Request your stay</h3>
+                      <input value={request.name} onChange={event => setRequest({ ...request, name: event.target.value })} placeholder="Your name" className="w-full bg-stone-100 dark:bg-stone-700 p-3 rounded-xl outline-none" />
+                      <div className="grid grid-cols-2 gap-3"><input value={request.checkIn} onChange={event => setRequest({ ...request, checkIn: event.target.value })} type="date" className="w-full bg-stone-100 dark:bg-stone-700 p-3 rounded-xl outline-none" /><input value={request.checkOut} onChange={event => setRequest({ ...request, checkOut: event.target.value })} type="date" className="w-full bg-stone-100 dark:bg-stone-700 p-3 rounded-xl outline-none" /></div>
+                      <input value={request.guests} onChange={event => setRequest({ ...request, guests: Number(event.target.value) })} type="number" min="1" max={selectedListing.capacity} placeholder="Guests" className="w-full bg-stone-100 dark:bg-stone-700 p-3 rounded-xl outline-none" />
+                      <textarea value={request.note} onChange={event => setRequest({ ...request, note: event.target.value })} placeholder="Tell the host a little about your group (optional)" rows={2} className="w-full bg-stone-100 dark:bg-stone-700 p-3 rounded-xl outline-none resize-none" />
+                      <button type="submit" className="w-full p-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700">Send stay request · ₹{selectedListing.price}/person/day</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'manage' && (
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-8">
+          <form onSubmit={submitListing} className="bg-white dark:bg-stone-800 p-6 md:p-8 rounded-3xl shadow-sm border border-stone-100 dark:border-stone-700 space-y-4 h-fit">
+            <div className="flex items-center justify-between"><div><h2 className="text-2xl font-bold">{editing ? 'Edit your stay' : 'Create a FarmStay'}</h2><p className="text-stone-500 text-sm mt-1">Give visitors a vivid, honest picture of farm life.</p></div><Camera className="text-green-600" /></div>
+            <input value={form.title} onChange={event => setForm({ ...form, title: event.target.value })} placeholder="Stay name" className="farmstay-input" />
+            <div className="grid grid-cols-2 gap-3"><input value={form.host} onChange={event => setForm({ ...form, host: event.target.value })} placeholder="Host name" className="farmstay-input" /><input value={form.location} onChange={event => setForm({ ...form, location: event.target.value })} placeholder="Location" className="farmstay-input" /></div>
+            <div className="grid grid-cols-2 gap-3"><input value={form.price} onChange={event => setForm({ ...form, price: event.target.value })} type="number" min="0" placeholder="₹ per person/day" className="farmstay-input" /><input value={form.capacity} onChange={event => setForm({ ...form, capacity: event.target.value })} type="number" min="1" placeholder="Guest capacity" className="farmstay-input" /></div>
+            <div className="grid grid-cols-2 gap-3"><input value={form.availability} onChange={event => setForm({ ...form, availability: event.target.value })} placeholder="Availability e.g. Oct - Mar" className="farmstay-input" /><input value={form.image} onChange={event => setForm({ ...form, image: event.target.value })} placeholder="Photo URL" className="farmstay-input" /></div>
+            <input value={form.accommodation} onChange={event => setForm({ ...form, accommodation: event.target.value })} placeholder="Accommodation details" className="farmstay-input" />
+            <input value={form.meals} onChange={event => setForm({ ...form, meals: event.target.value })} placeholder="Included meals, separated by commas" className="farmstay-input" />
+            <input value={form.activities} onChange={event => setForm({ ...form, activities: event.target.value })} placeholder="Activities, separated by commas" className="farmstay-input" />
+            <input value={form.sustainability} onChange={event => setForm({ ...form, sustainability: event.target.value })} placeholder="Sustainability highlights, separated by commas" className="farmstay-input" />
+            <textarea value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} placeholder="Describe the experience" rows={3} className="farmstay-input resize-none" />
+            <div className="flex gap-3"><button type="submit" className="flex-1 p-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700"><Plus size={18} className="inline mr-2" />{editing ? 'Save changes' : 'Publish FarmStay'}</button>{editing && <button type="button" onClick={() => { setEditing(null); setForm(FARMSTAY_EMPTY_FORM); }} className="px-4 rounded-xl bg-stone-100 dark:bg-stone-700 font-bold">Cancel</button>}</div>
+          </form>
+
+          <div className="space-y-8">
+            <section><h2 className="text-xl font-bold mb-4">My listings</h2>{myListings.length === 0 ? <div className="bg-white dark:bg-stone-800 p-6 rounded-3xl border border-dashed border-stone-300 dark:border-stone-600 text-stone-500">Your published stays will appear here.</div> : <div className="space-y-3">{myListings.map(listing => <div key={listing.id} className="bg-white dark:bg-stone-800 p-4 rounded-2xl border border-stone-100 dark:border-stone-700 flex items-center gap-3"><img src={listing.image} alt="" className="w-16 h-16 rounded-xl object-cover" /><div className="flex-1 min-w-0"><h3 className="font-bold truncate">{listing.title}</h3><p className="text-sm text-stone-500">₹{listing.price} · up to {listing.capacity} guests</p></div><button onClick={() => editListing(listing)} className="p-2 rounded-full bg-green-50 text-green-700"><Edit3 size={16} /></button><button onClick={() => removeFarmStayListing(listing.id)} className="p-2 rounded-full bg-red-50 text-red-600"><Trash2 size={16} /></button></div>)}</div>}</section>
+            <section><h2 className="text-xl font-bold mb-4">Booking requests</h2>{farmStayRequests.length === 0 ? <div className="bg-white dark:bg-stone-800 p-6 rounded-3xl border border-stone-100 dark:border-stone-700 text-stone-500">New visitor requests will show up here.</div> : <div className="space-y-3">{farmStayRequests.map(item => <div key={item.id} className="bg-white dark:bg-stone-800 p-5 rounded-2xl border border-stone-100 dark:border-stone-700"><div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{item.name} · {item.guests} guests</h3><p className="text-sm text-stone-500">{item.listingTitle} · {item.checkIn} → {item.checkOut}</p>{item.note && <p className="text-sm text-stone-500 mt-2">“{item.note}”</p>}</div><span className={`farmstay-status farmstay-status-${item.status}`}>{item.status}</span></div>{item.status === 'pending' && <div className="flex gap-2 mt-4"><button onClick={() => updateFarmStayRequest(item.id, 'accepted')} className="flex-1 p-2 rounded-xl bg-green-100 text-green-800 font-bold"><Check size={16} className="inline mr-1" />Accept</button><button onClick={() => updateFarmStayRequest(item.id, 'declined')} className="flex-1 p-2 rounded-xl bg-red-50 text-red-700 font-bold">Decline</button></div>}</div>)}</div>}</section>
           </div>
         </div>
       )}
@@ -1158,10 +1415,10 @@ const SettingsView = () => {
           <div className="pt-6 border-t border-stone-100 dark:border-stone-700">
             <h2 className="text-xl font-bold mb-4 flex items-center"><Moon className="mr-2"/> {t('theme')}</h2>
             <div className="flex space-x-4">
-              <button onClick={() => setTheme('light')} className={`flex-1 p-4 rounded-2xl font-bold flex justify-center items-center ${theme === 'light' ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-800'}`}>
+              <button onClick={() => setTheme('light')} className={`flex-1 p-4 rounded-2xl font-bold flex justify-center items-center border transition-all ${theme === 'light' ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'}`}>
                 <SunMedium className="mr-2" /> {t('light')}
               </button>
-              <button onClick={() => setTheme('dark')} className={`flex-1 p-4 rounded-2xl font-bold flex justify-center items-center ${theme === 'dark' ? 'bg-white text-stone-800' : 'bg-stone-700 text-white'}`}>
+              <button onClick={() => setTheme('dark')} className={`flex-1 p-4 rounded-2xl font-bold flex justify-center items-center border transition-all ${theme === 'dark' ? 'bg-stone-900 text-white border-stone-800 shadow-lg shadow-stone-900/10' : 'bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200'}`}>
                 <Moon className="mr-2" /> {t('dark')}
               </button>
             </div>
@@ -1179,6 +1436,7 @@ const Navigation = () => {
     { id: 'weather', icon: CloudRain, label: t('nav_weather') },
     { id: 'crop', icon: Sprout, label: t('nav_crop') },
     { id: 'market', icon: Store, label: t('nav_market') },
+    { id: 'farmstay', icon: Mountain, label: t('nav_farmstay') },
     { id: 'hire', icon: Users, label: t('nav_hire') },
     { id: 'sdg', icon: Leaf, label: t('nav_sdg') },
     { id: 'ai', icon: Bot, label: t('nav_ai') },
@@ -1189,16 +1447,18 @@ const Navigation = () => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <nav className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 p-6 z-50">
+      <nav className="app-nav hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 p-6 z-50">
         <div className="flex items-center space-x-3 mb-10 text-green-600 dark:text-green-500">
-          <Sprout size={32} />
+          <div className="brand-mark p-2.5 rounded-2xl shadow-sm ring-1 ring-green-200/70 bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+            <Sprout size={26} />
+          </div>
           <span className="font-black text-xl tracking-tight leading-tight">Kisan<br/>Tomodachi</span>
         </div>
         <div className="space-y-2 flex-1 overflow-y-auto pr-1">
           {items.map(item => (
             <button
               key={item.id} onClick={() => setView(item.id)}
-              className={`w-full flex items-center space-x-4 p-4 rounded-2xl font-bold text-lg transition-all ${view === item.id ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400' : 'text-stone-500 hover:bg-stone-50 dark:hover:bg-stone-800'}`}
+              className={`nav-pill w-full flex items-center space-x-4 p-4 rounded-2xl font-bold text-lg transition-all ${view === item.id ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 dark:from-green-900/70 dark:to-emerald-900/40 dark:text-green-300' : 'text-stone-500 hover:bg-stone-50 dark:hover:bg-stone-800'}`}
             >
               <item.icon size={24} /> <span>{item.label}</span>
             </button>
@@ -1250,7 +1510,7 @@ const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 p-4 md:px-8 flex justify-between items-center">
+    <header className="app-header sticky top-0 z-40 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 p-4 md:px-8 flex justify-between items-center">
       <div className="md:hidden flex items-center text-green-600 font-black text-lg">
         <Sprout className="mr-2" size={24}/> Kisan
       </div>
@@ -1284,6 +1544,7 @@ const AppContent = () => {
           {view === 'weather' && data && <WeatherView />}
           {view === 'crop' && data && <CropSoilView />}
           {view === 'market' && <MarketplaceView />}
+          {view === 'farmstay' && <FarmStayView />}
           {view === 'hire' && <HireView />}
           {view === 'sdg' && <SDGView />}
           {view === 'ai' && <AssistantView />}

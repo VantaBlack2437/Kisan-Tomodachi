@@ -43,3 +43,5 @@ The platform combines IoT-based field monitoring, weather information, local AI 
 - React
 - Vite
 - Lucide Icons
+
+Made for India-Japan Regional Hackathon.

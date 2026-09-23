@@ -19,9 +19,60 @@ import PixelSnow from './PixelSnow';
 // By default the frontend talks to the backend on the same machine/host it was
 // loaded from, port 8000. If your backend is elsewhere, set it here,
 // e.g. 'http://192.168.1.50:8000'
-const API_BASE_OVERRIDE = '';
+const API_BASE_OVERRIDE = import.meta.env.VITE_FIELD_API_BASE || '';
 const API_BASE = API_BASE_OVERRIDE || `${window.location.protocol}//${window.location.hostname}:8000`;
+// IndicConformer runs on the speech-to-text machine, independently of the field API.
+const STT_API_BASE_OVERRIDE = import.meta.env.VITE_STT_API_BASE || 'http://192.168.137.141:8000';
+const STT_API_BASE = STT_API_BASE_OVERRIDE.replace(/\/$/, '');
 const POLL_MS = 2000;
+
+const STT_LANGUAGES = new Set([
+  'as', 'bn', 'brx', 'doi', 'gu', 'hi', 'kn', 'ks', 'kok', 'mai', 'ml',
+  'mni', 'mr', 'ne', 'or', 'pa', 'sa', 'sat', 'sd', 'ta', 'te', 'ur'
+]);
+
+const encodeWav = (samples, sampleRate) => {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeText = (offset, text) => [...text].forEach((char, index) => view.setUint8(offset + index, char.charCodeAt(0)));
+  const writeUint16 = (offset, value) => view.setUint16(offset, value, true);
+  const writeUint32 = (offset, value) => view.setUint32(offset, value, true);
+
+  writeText(0, 'RIFF');
+  writeUint32(4, 36 + samples.length * 2);
+  writeText(8, 'WAVE');
+  writeText(12, 'fmt ');
+  writeUint32(16, 16);
+  writeUint16(20, 1);
+  writeUint16(22, 1);
+  writeUint32(24, sampleRate);
+  writeUint32(28, sampleRate * 2);
+  writeUint16(32, 2);
+  writeUint16(34, 16);
+  writeText(36, 'data');
+  writeUint32(40, samples.length * 2);
+
+  samples.forEach((sample, index) => {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(44 + index * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+  });
+  return new Blob([view], { type: 'audio/wav' });
+};
+
+const downsample = (samples, inputRate, outputRate) => {
+  if (inputRate === outputRate) return samples;
+  const ratio = inputRate / outputRate;
+  const outputLength = Math.round(samples.length / ratio);
+  const output = new Float32Array(outputLength);
+  for (let index = 0; index < outputLength; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(Math.floor((index + 1) * ratio), samples.length);
+    let total = 0;
+    for (let sourceIndex = start; sourceIndex < end; sourceIndex += 1) total += samples[sourceIndex];
+    output[index] = total / Math.max(1, end - start);
+  }
+  return output;
+};
 
 // Soil thresholds (% moisture). Keep these in sync with SOIL_DRY_BELOW etc. in main.py
 const SOIL_CRITICAL_BELOW = 15;
@@ -198,6 +249,11 @@ const translations = {
     ai_greeting: "Hello! I'm your Kisan Assistant. Ask me about your soil, the weather, or when to water.",
     ai_error: "Sorry, I couldn't reach the assistant. Please try again.",
     ai_thinking: "Thinking...",
+    voice_start: "Record question",
+    voice_stop: "Stop recording",
+    voice_transcribing: "Transcribing...",
+    voice_unsupported: "Voice input is unavailable for this language.",
+    voice_error: "Could not transcribe the recording.",
     q_water: "💧 Does it need water?", q_weather: "☀️ Weather tomorrow?", q_crop: "🌱 How is my field?",
     forecast: "5-Day Forecast", weather_unavailable: "Weather data unavailable", field_conditions: "Field Conditions",
     raw_data: "Raw Sensor Data", soil_raw: "Soil Raw ADC", last_updated: "Last updated",
@@ -1287,7 +1343,11 @@ const AssistantView = () => {
   const [msgs, setMsgs] = useState([]);       // conversation (the greeting is rendered separately so it follows the language)
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
   const bottomRef = useRef(null);
+  const recorderRef = useRef(null);
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -1314,6 +1374,62 @@ const AssistantView = () => {
       setMsgs(prev => [...prev, { role: 'ai', text: t('ai_error') }]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.source?.disconnect();
+    recorderRef.current?.processor?.disconnect();
+    recorderRef.current?.context?.close();
+    recorderRef.current?.resolve?.();
+    recorderRef.current = null;
+    setRecording(false);
+  };
+
+  const recordVoiceQuestion = async () => {
+    if (recording) {
+      stopRecording();
+      return;
+    }
+    if (!STT_LANGUAGES.has(lang)) {
+      setVoiceError(t('voice_unsupported'));
+      return;
+    }
+
+    setVoiceError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const context = new AudioContext();
+      const source = context.createMediaStreamSource(stream);
+      const processor = context.createScriptProcessor(4096, 1, 1);
+      const chunks = [];
+      const recordingState = { stream, context, source, processor, chunks };
+      recorderRef.current = recordingState;
+      processor.onaudioprocess = (event) => chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+      source.connect(processor);
+      processor.connect(context.destination);
+      setRecording(true);
+
+      await new Promise((resolve) => { recordingState.resolve = resolve; });
+      stream.getTracks().forEach(track => track.stop());
+      const samples = new Float32Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
+      let offset = 0;
+      chunks.forEach(chunk => { samples.set(chunk, offset); offset += chunk.length; });
+      const wav = encodeWav(downsample(samples, context.sampleRate, 16000), 16000);
+      setTranscribing(true);
+      const form = new FormData();
+      form.append('audio', wav, 'question.wav');
+      form.append('language', lang);
+      const response = await fetch(`${STT_API_BASE}/transcribe`, { method: 'POST', body: form });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
+      setInput(result.transcription || '');
+    } catch {
+      setVoiceError(t('voice_error'));
+    } finally {
+      setTranscribing(false);
+      setRecording(false);
+      recorderRef.current = null;
     }
   };
 
@@ -1354,7 +1470,15 @@ const AssistantView = () => {
             ))}
           </div>
           <div className="flex items-center space-x-2">
-            <button className="p-4 bg-stone-100 dark:bg-stone-700 rounded-full hover:bg-stone-200 transition-colors"><Mic size={24} /></button>
+            <button
+              onClick={recordVoiceQuestion}
+              disabled={loading || transcribing}
+              title={recording ? t('voice_stop') : t('voice_start')}
+              aria-label={recording ? t('voice_stop') : t('voice_start')}
+              className={`p-4 rounded-full transition-colors disabled:opacity-50 ${recording ? 'bg-red-500 text-white animate-pulse' : 'bg-stone-100 dark:bg-stone-700 hover:bg-stone-200'}`}
+            >
+              <Mic size={24} />
+            </button>
             <input
               type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
@@ -1364,6 +1488,11 @@ const AssistantView = () => {
             />
             <button onClick={() => send(input)} disabled={loading} className="p-4 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors disabled:opacity-50"><Send size={24} /></button>
           </div>
+          {(recording || transcribing || voiceError) && (
+            <p className={`mt-3 text-sm ${voiceError ? 'text-red-600' : 'text-stone-500'}`}>
+              {voiceError || (recording ? t('voice_stop') : t('voice_transcribing'))}
+            </p>
+          )}
        </div>
     </div>
   );

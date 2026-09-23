@@ -67,7 +67,7 @@ CROP = "My Crop"
 LANG_NAMES = {"en": "English", "te": "Telugu", "hi": "Hindi", "ja": "Japanese"}
 
 # --- LLM (koboldcpp on the other laptop) ---
-LLM_BASE_URL = "http://172.16.23.9:5001"
+LLM_BASE_URL = "http://192.168.137.141:5001"
 LLM_GENERATE_URL = f"{LLM_BASE_URL}/api/v1/generate"
 LLM_MODEL_URL = f"{LLM_BASE_URL}/api/v1/model"
 LLM_TIMEOUT = 300        # seconds to wait for the answer (slow laptops need this)
@@ -442,6 +442,7 @@ Rules:
 - Do not advise irrigating when the soil is wet/saturated or heavy rain is expected.
 - Give actionable advice. Do not show your reasoning.
 - Keep answers short: under 100 words.
+- Prefer natural options over chemical ones. Keep fertilizers and pesticides as a last resort option only.
 - Reply in {language}.
 <|im_end|>
 <|im_start|>user
